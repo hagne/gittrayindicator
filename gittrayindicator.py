@@ -10,7 +10,7 @@ from gi.repository import AppIndicator3, Gtk, GLib
 # Define icons for different states
 ICON_CLEAN = "/usr/share/icons/gnome/16x16/status/weather-clear.png"
 ICON_DIRTY = "/usr/share/icons/gnome/16x16/status/error.png"
-
+ICON_STALE = "/usr/share/icons/gnome/16x16/status/dialog-warning.png"
 # Load repositories from config file
 CONFIG_FILE = os.path.expanduser("~/.git_tray_config.json")
 
@@ -64,7 +64,7 @@ class GitTrayMonitor:
         repo_path = os.path.expanduser(repo)
         if not os.path.exists(repo_path):
             self.log_messages.append(f"Checked {repo}: repo not found")
-            return True
+            return 'Dirty'
             
         
         # Check for uncommitted changes
@@ -79,20 +79,41 @@ class GitTrayMonitor:
         )
         has_unpushed = bool(cherry_output.stdout.strip())
         
-        status = "Clean" if not has_changes and not has_unpushed else "Dirty"
+        # Check for unpulled commits (remote changes)
+        subprocess.run(["git", "fetch"], cwd=repo_path, capture_output=True, text=True)
+        remote_changes_output = subprocess.run(
+            ["git", "rev-list", "--left-right", "@{upstream}...HEAD"], cwd=repo_path, capture_output=True, text=True
+        )
+        has_unpulled = bool(remote_changes_output.stdout.strip())
+        
+        if has_changes:
+            status = 'Dirty'
+        elif has_unpushed:
+            status = 'Dirty'
+        elif has_unpulled:
+            status = 'Stale'
+        else:
+            status = 'Clean'
+        
         self.log_messages.append(f"Checked {repo}: {status}")
         
-        return has_changes or has_unpushed
+        return status
     
     def update_status(self, event = None):
         self.log_messages.append('============')
         self.log_messages.append('Refresh')
         self.log_messages.append('------------')
-        dirty = any(self.check_git_status(repo) for repo in REPOS)
+        statuses = [self.check_git_status(repo) for repo in REPOS]
         
+        if 'Dirty' in statuses:
+            icon = ICON_DIRTY
+        elif 'Stale' in statuses:
+            icon = ICON_STALE
+        else:
+            icon = ICON_CLEAN
         # Update the tray icon based on repo status
         # self.indicator.set_icon(ICON_DIRTY if dirty else ICON_CLEAN)
-        self.indicator.set_icon_full(ICON_DIRTY if dirty else ICON_CLEAN, "Git Status")
+        self.indicator.set_icon_full(icon, "Git Status")
         self.log_messages.append('------------')
         # Schedule next check
         GLib.timeout_add_seconds(60, self.update_status)
