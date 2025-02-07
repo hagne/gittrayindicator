@@ -31,8 +31,14 @@ class GitTrayMonitor:
         )
         self.indicator.set_status(AppIndicator3.IndicatorStatus.ACTIVE)
         
+        self.log_messages = []
+        
         # Create a menu
         self.menu = Gtk.Menu()
+        
+        update_item = Gtk.MenuItem(label="Refresh")
+        update_item.connect("activate", self.update_status)
+        self.menu.append(update_item)
         
         config_item = Gtk.MenuItem(label="Edit Config File")
         config_item.connect("activate", self.open_config_editor)
@@ -49,7 +55,7 @@ class GitTrayMonitor:
         self.menu.show_all()
         self.indicator.set_menu(self.menu)
         
-        self.log_messages = []
+
         
         # Start monitoring
         self.update_status()
@@ -78,18 +84,26 @@ class GitTrayMonitor:
         
         return has_changes or has_unpushed
     
-    def update_status(self):
+    def update_status(self, event = None):
+        self.log_messages.append('============')
+        self.log_messages.append('Refresh')
+        self.log_messages.append('------------')
         dirty = any(self.check_git_status(repo) for repo in REPOS)
         
         # Update the tray icon based on repo status
-        self.indicator.set_icon(ICON_DIRTY if dirty else ICON_CLEAN)
-        
+        # self.indicator.set_icon(ICON_DIRTY if dirty else ICON_CLEAN)
+        self.indicator.set_icon_full(ICON_DIRTY if dirty else ICON_CLEAN, "Git Status")
+        self.log_messages.append('------------')
         # Schedule next check
         GLib.timeout_add_seconds(60, self.update_status)
         return False
     
     def show_log(self, _):
-        dialog = Gtk.Dialog(title="Git Status Log", flags=Gtk.DialogFlags.MODAL)
+        dialog = Gtk.Dialog(title="Git Status Log", 
+                            modal=True,
+                            destroy_with_parent=True,
+                            # flags=Gtk.DialogFlags.MODAL,
+                            )
         dialog.add_buttons(Gtk.STOCK_OK, Gtk.ResponseType.OK)
         
         text_view = Gtk.TextView()
@@ -111,7 +125,11 @@ class GitTrayMonitor:
         dialog.destroy()
     
     def open_config_editor(self, _):
-        dialog = Gtk.Dialog(title="Edit Config File", flags=Gtk.DialogFlags.MODAL)
+        dialog = Gtk.Dialog(title="Edit Config File",
+                            modal=True,
+                            destroy_with_parent=True,
+                            # flags=Gtk.DialogFlags.MODAL,
+                            )
         dialog.add_buttons(Gtk.STOCK_SAVE, Gtk.ResponseType.OK, Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL)
         
         text_view = Gtk.TextView()
