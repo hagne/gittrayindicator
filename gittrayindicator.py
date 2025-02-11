@@ -2,17 +2,27 @@ import os
 import subprocess
 import json
 import gi
+import pathlib as pl
 
 gi.require_version('AppIndicator3', '0.1')
 gi.require_version('Gtk', '3.0')
 from gi.repository import AppIndicator3, Gtk, GLib
 
 # Define icons for different states
-ICON_CLEAN = "/usr/share/icons/gnome/16x16/status/weather-clear.png"
-ICON_DIRTY = "/usr/share/icons/gnome/16x16/status/error.png"
-ICON_STALE = "/usr/share/icons/gnome/16x16/status/dialog-warning.png"
+# ICON_CLEAN = "/usr/share/icons/gnome/16x16/status/weather-clear.png"
+# ICON_DIRTY = "/usr/share/icons/gnome/16x16/status/error.png"
+# ICON_STALE = "/usr/share/icons/gnome/16x16/status/dialog-warning.png"
 # Load repositories from config file
 CONFIG_FILE = os.path.expanduser("~/.git_tray_config.json")
+
+def find_icon(icon_list):
+    for p2f in icon_list:
+        if pl.Path(p2f).is_file():
+            return p2f
+    icon_list_j = '\n'.join(icon_list)
+    assert(False), f'Icon not found. None of the path options below exist\n{icon_list_j}'
+        
+
 
 def load_config():
     if os.path.exists(CONFIG_FILE):
@@ -24,11 +34,20 @@ REPOS = load_config()
 
 class GitTrayMonitor:
     def __init__(self):
+        self.icon_clean = find_icon(["/usr/share/icons/gnome/16x16/status/weather-clear.png",
+                                     "/usr/share/icons/Adwaita/16x16/legacy/face-laugh.png"])
+        self.icon_dirty = find_icon(["/usr/share/icons/gnome/16x16/status/error.png",
+                                     "/usr/share/icons/Adwaita/16x16/legacy/dialog-error.png"])
+        self.icon_stale = find_icon(["/usr/share/icons/gnome/16x16/status/dialog-warning.png",
+                                     "/usr/share/icons/Adwaita/16x16/legacy/dialog-warning.png"])
+        
+        #/usr/share/icons/Adwaita/16x16/legacy
+        
         self.indicator = AppIndicator3.Indicator.new(
-            "git_status_indicator",
-            ICON_CLEAN,
-            AppIndicator3.IndicatorCategory.APPLICATION_STATUS
-        )
+                            "git_status_indicator",
+                            self.icon_clean,
+                            AppIndicator3.IndicatorCategory.APPLICATION_STATUS
+                        )
         self.indicator.set_status(AppIndicator3.IndicatorStatus.ACTIVE)
         
         self.log_messages = []
@@ -59,6 +78,8 @@ class GitTrayMonitor:
         
         # Start monitoring
         self.update_status()
+    
+
 
     def check_git_status(self, repo):
         repo_path = os.path.expanduser(repo)
@@ -106,11 +127,11 @@ class GitTrayMonitor:
         statuses = [self.check_git_status(repo) for repo in REPOS]
         
         if 'Dirty' in statuses:
-            icon = ICON_DIRTY
+            icon = self.icon_dirty #ICON_DIRTY
         elif 'Stale' in statuses:
             icon = ICON_STALE
         else:
-            icon = ICON_CLEAN
+            icon = self.icon_clean #ICON_CLEAN
         # Update the tray icon based on repo status
         # self.indicator.set_icon(ICON_DIRTY if dirty else ICON_CLEAN)
         self.indicator.set_icon_full(icon, "Git Status")
