@@ -129,7 +129,7 @@ class GitTrayMonitor:
         if 'Dirty' in statuses:
             icon = self.icon_dirty #ICON_DIRTY
         elif 'Stale' in statuses:
-            icon = ICON_STALE
+            icon = self.icon_stale
         else:
             icon = self.icon_clean #ICON_CLEAN
         # Update the tray icon based on repo status
@@ -137,7 +137,7 @@ class GitTrayMonitor:
         self.indicator.set_icon_full(icon, "Git Status")
         self.log_messages.append('------------')
         # Schedule next check
-        GLib.timeout_add_seconds(60, self.update_status)
+        GLib.timeout_add_seconds(600, self.update_status)
         return False
     
     def show_log(self, _):
