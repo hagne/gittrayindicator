@@ -1,13 +1,22 @@
 # gittrayindicator
 Never forget to push your repos ever again.
 
-# Dependencies
+# Installation
+## Dependencies
 
 - AppIndicator3
 - python3-gi
 - GTK (probaly installed)
 
+## Deb system
 sudo apt install gir1.2-appindicator3-0.1 python3-gi
+
+## Red Hat
+
+1) sudo dnf install gnome-shell-extension-appindicator libappindicator-gtk3 python3-gobject
+2) Restart gnome, e.g. log out and backin
+3) gnome-extensions enable appindicatorsupport@rgcjonas.gmail.com
+
 
 # Usage
 
