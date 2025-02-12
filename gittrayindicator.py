@@ -3,6 +3,9 @@ import subprocess
 import json
 import gi
 import pathlib as pl
+import datetime
+import webbrowser
+
 
 gi.require_version('AppIndicator3', '0.1')
 gi.require_version('Gtk', '3.0')
@@ -24,14 +27,9 @@ def find_icon(icon_list):
         
 
 
-def load_config():
-    if os.path.exists(CONFIG_FILE):
-        with open(CONFIG_FILE, "r") as f:
-            return json.load(f).get("repositories", [])
-    return []
 
-REPOS = load_config()
 
+# REPOS = load_config()
 class GitTrayMonitor:
     def __init__(self):
         self.icon_clean = find_icon(["/usr/share/icons/gnome/16x16/status/weather-clear.png",
@@ -40,7 +38,9 @@ class GitTrayMonitor:
                                      "/usr/share/icons/Adwaita/16x16/legacy/dialog-error.png"])
         self.icon_stale = find_icon(["/usr/share/icons/gnome/16x16/status/dialog-warning.png",
                                      "/usr/share/icons/Adwaita/16x16/legacy/dialog-warning.png"])
+        self.log_messages = []
         
+        self.repos = self.load_config()
         #/usr/share/icons/Adwaita/16x16/legacy
         
         self.indicator = AppIndicator3.Indicator.new(
@@ -50,14 +50,31 @@ class GitTrayMonitor:
                         )
         self.indicator.set_status(AppIndicator3.IndicatorStatus.ACTIVE)
         
-        self.log_messages = []
-        
+
         # Create a menu
         self.menu = Gtk.Menu()
+        
+        app_name_item = Gtk.MenuItem(label="Git Tray Indicator")
+        app_name_item.set_sensitive(False)
+        self.menu.append(app_name_item)
+        
+        separator = Gtk.SeparatorMenuItem()
+        self.menu.append(separator)
         
         update_item = Gtk.MenuItem(label="Refresh")
         update_item.connect("activate", self.update_status)
         self.menu.append(update_item)
+                
+        dirty_repos_item = Gtk.MenuItem(label="Dirty Repos")
+        dirty_repos_item.connect("activate", self.show_changed_repos, 'Dirty')
+        self.menu.append(dirty_repos_item)
+        
+        stale_repos_item = Gtk.MenuItem(label="Stale Repos")
+        stale_repos_item.connect("activate", self.show_changed_repos, 'Stale')
+        self.menu.append(stale_repos_item)
+        
+        separator = Gtk.SeparatorMenuItem()
+        self.menu.append(separator)
         
         config_item = Gtk.MenuItem(label="Edit Config File")
         config_item.connect("activate", self.open_config_editor)
@@ -66,6 +83,10 @@ class GitTrayMonitor:
         log_item = Gtk.MenuItem(label="Log / Messages")
         log_item.connect("activate", self.show_log)
         self.menu.append(log_item)
+
+        
+        separator2 = Gtk.SeparatorMenuItem()
+        self.menu.append(separator2)
         
         quit_item = Gtk.MenuItem(label="Quit")
         quit_item.connect("activate", self.quit)
@@ -78,8 +99,39 @@ class GitTrayMonitor:
         
         # Start monitoring
         self.update_status()
-    
+    def open_repo(self,_,repo):
+        link = repo.replace('~', 'http://localhost:8888/lab/tree')
+        webbrowser.open(link)
+        
+    def show_changed_repos(self, _, test):
+        dialog = Gtk.Dialog(title="Changed Repositories", 
+                            modal=True,
+                            )
+        dialog.add_buttons(Gtk.STOCK_OK, Gtk.ResponseType.OK)
+        box = dialog.get_content_area()
 
+        for status,repo in zip(self.repos_stati,self.repos):
+            if status == test:
+                repo_item = Gtk.Button(label=repo)
+                repo_item.connect("clicked", self.open_repo, repo)
+                box.add(repo_item)
+       
+        dialog.show_all()      
+        dialog.run()
+        dialog.destroy()
+    
+    def load_config(self):
+        if os.path.exists(CONFIG_FILE):
+            try:
+                with open(CONFIG_FILE, "r") as f:
+                    return json.load(f).get("repositories", [])
+            except Exception as e:
+                self.log_messages.append(f'Error when parsing configuration file: {str(e)}')
+                return []
+                
+        else:
+            self.log_messages.append("No repositories configured. Please add repositories to ~/.git_tray_config.json")
+            return []
 
     def check_git_status(self, repo):
         repo_path = os.path.expanduser(repo)
@@ -122,9 +174,10 @@ class GitTrayMonitor:
     
     def update_status(self, event = None):
         self.log_messages.append('============')
-        self.log_messages.append('Refresh')
+        self.log_messages.append(f'Refresh -- {datetime.datetime.now()}')
         self.log_messages.append('------------')
-        statuses = [self.check_git_status(repo) for repo in REPOS]
+        statuses = [self.check_git_status(repo) for repo in self.repos]
+        self.repos_stati = statuses
         
         if 'Dirty' in statuses:
             icon = self.icon_dirty #ICON_DIRTY
@@ -141,6 +194,10 @@ class GitTrayMonitor:
         return False
     
     def show_log(self, _):
+        max_len = 20
+        if len(self.log_messages) > max_len:
+            self.log_messages = self.log_messages[-max_len:]
+            
         dialog = Gtk.Dialog(title="Git Status Log", 
                             modal=True,
                             destroy_with_parent=True,
@@ -199,8 +256,7 @@ class GitTrayMonitor:
             start_iter, end_iter = text_buffer.get_bounds()
             with open(CONFIG_FILE, "w") as f:
                 f.write(text_buffer.get_text(start_iter, end_iter, True))
-            global REPOS
-            REPOS = load_config()
+            self.repos = self.load_config()
             self.update_status()
         
         dialog.destroy()
@@ -208,8 +264,6 @@ class GitTrayMonitor:
     def quit(self, _):
         Gtk.main_quit()
 
-if __name__ == "__main__":
-    if not REPOS:
-        print("No repositories configured. Please add repositories to ~/.git_tray_config.json")
+if __name__ == "__main__":        
     app = GitTrayMonitor()
     Gtk.main()
