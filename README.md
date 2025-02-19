@@ -39,7 +39,35 @@ witch list the repositories that should be checked:
 python3 /path/to/repo/gittrayindicator.py
 
 # Run on startup
+
+## Deb system
 add python3 /path/to/repo/gittrayindicator.py to startup applications
+
+## Red Hat
+1) Create gittrayindicator.desktop file in 
+```
+~/.local/share/applications/
+```
+example file content:
+```
+[Desktop Entry]
+Type=Application
+Exec=python3 /home/grad/htelg/prog_dev/gittrayindicator/gittrayindicator.py
+Name=gittrayindicator
+Icon=utilities-terminal
+Terminal=false
+Categories=Utility;
+```
+
+2) Update GNOME’s application cache:
+
+```
+update-desktop-database ~/.local/share/applications/
+```
+Now you are able to launch the script e.g. via the super key.
+
+3) Use gnome-tweak to add program to the list of startup applications
+
 
 # Todo
 * notify if error in config file after change
