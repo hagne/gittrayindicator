@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 import os
 import subprocess
 import json
@@ -99,9 +101,28 @@ class GitTrayMonitor:
         
         # Start monitoring
         self.update_status()
-    def open_repo(self,_,repo):
-        link = repo.replace('~', 'http://localhost:8888/lab/tree')
-        webbrowser.open(link)
+    def open_repo(self,_,repo, dialog, how2open = 'terminal'):
+        if how2open == 'jupyter':
+            link = repo.replace('~', 'http://localhost:8888/lab/tree')
+            webbrowser.open(link)
+            
+        elif how2open == 'terminal':
+            
+            # Define the path where the terminal should open
+            working_directory = os.path.expanduser("~/prog/gittrayindicator")
+            
+            # Command to run inside the terminal
+            command = "git status; exec bash --noprofile --norc"  # Keeps the terminal open but avoids reloading startup scripts
+            
+            # Open the terminal in the specified directory and run the command
+            subprocess.Popen(["gnome-terminal", "--working-directory", working_directory, "--", "bash", "-c", command])
+            
+        else:
+            raise ValueError(f'{how2open} is not a valid option for how2open.')
+            
+        dialog.destroy()
+            
+        return
         
     def show_changed_repos(self, _, test):
         dialog = Gtk.Dialog(title="Changed Repositories", 
@@ -113,12 +134,13 @@ class GitTrayMonitor:
         for status,repo in zip(self.repos_stati,self.repos):
             if status == test:
                 repo_item = Gtk.Button(label=repo)
-                repo_item.connect("clicked", self.open_repo, repo)
+                repo_item.connect("clicked", self.open_repo, repo, dialog)
                 box.add(repo_item)
        
         dialog.show_all()      
         dialog.run()
         dialog.destroy()
+        
     
     def load_config(self):
         if os.path.exists(CONFIG_FILE):
