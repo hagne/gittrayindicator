@@ -34,6 +34,7 @@ def find_icon(icon_list):
 # REPOS = load_config()
 class GitTrayMonitor:
     def __init__(self):
+        self.verbose = True
         self.icon_clean = find_icon(["/usr/share/icons/gnome/16x16/status/weather-clear.png",
                                      "/usr/share/icons/Adwaita/16x16/legacy/face-laugh.png"])
         self.icon_dirty = find_icon(["/usr/share/icons/gnome/16x16/status/error.png",
@@ -113,12 +114,14 @@ class GitTrayMonitor:
             working_directory = os.path.expanduser(repo)
             
             # Command to run inside the terminal
-            command = "git status; exec bash --noprofile --norc"  # Keeps the terminal open but avoids reloading startup scripts
+            command = "git status; exec bash -i"# --noprofile --norc"  # Keeps the terminal open but avoids reloading startup scripts
             
             # Open the terminal in the specified directory and run the command
-            p = subprocess.Popen(["gnome-terminal", "--working-directory", working_directory, "--", "bash", "-c", command])
+            # p = subprocess.Popen(["gnome-terminal", "--working-directory", working_directory, "--", "bash", "-c", command])
+            p = subprocess.Popen(["x-terminal-emulator", "-e", f"bash -c 'cd {working_directory}; git status; exec bash --noprofile --norc -i'"])
             p.wait()
-            self.update_status(None)
+            
+            self.update_status(which = repo)
             
         else:
             raise ValueError(f'{how2open} is not a valid option for how2open.')
@@ -134,7 +137,8 @@ class GitTrayMonitor:
         dialog.add_buttons(Gtk.STOCK_OK, Gtk.ResponseType.OK)
         box = dialog.get_content_area()
 
-        for status,repo in zip(self.repos_stati,self.repos):
+        # for status,repo in zip(self.repos_stati,self.repos):
+        for repo, status in self.repos_stati.items():
             if status == test:
                 repo_item = Gtk.Button(label=repo)
                 repo_item.connect("clicked", self.open_repo, repo, dialog)
@@ -193,17 +197,28 @@ class GitTrayMonitor:
         else:
             status = 'Clean'
         
-        self.log_messages.append(f"Checked {repo}: {status}")
+        message = f"Checked {repo}: {status}"
+        self.log_messages.append(message)
+        if self.verbose:
+            print(message)
         
         return status
     
-    def update_status(self, event = None):
+    def update_status(self, event = None, which = 'all'):
+        if self.verbose:
+            print('update_status')
         self.log_messages.append('============')
         self.log_messages.append(f'Refresh -- {datetime.datetime.now()}')
         self.log_messages.append('------------')
-        statuses = [self.check_git_status(repo) for repo in self.repos]
-        self.repos_stati = statuses
+        if which == 'all':
+            self.repos_stati = {repo: self.check_git_status(repo) for repo in self.repos}
+        else:
+            if which not in self.repos_stati.keys():
+                raise KeyError(f'{which} not a ins repos_stati.\n {self.repo_stati}')
+            else:
+                self.repos_stati[which] = self.check_git_status(which)
         
+        statuses = self.repos_stati.values()
         if 'Dirty' in statuses:
             icon = self.icon_dirty #ICON_DIRTY
         elif 'Stale' in statuses:
