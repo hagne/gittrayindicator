@@ -102,6 +102,7 @@ class GitTrayMonitor:
         # Start monitoring
         self.update_status()
     def open_repo(self,_,repo, dialog, how2open = 'terminal'):
+        
         if how2open == 'jupyter':
             link = repo.replace('~', 'http://localhost:8888/lab/tree')
             webbrowser.open(link)
@@ -109,7 +110,7 @@ class GitTrayMonitor:
         elif how2open == 'terminal':
             
             # Define the path where the terminal should open
-            working_directory = os.path.expanduser("~/prog/gittrayindicator")
+            working_directory = os.path.expanduser(repo)
             
             # Command to run inside the terminal
             command = "git status; exec bash --noprofile --norc"  # Keeps the terminal open but avoids reloading startup scripts
