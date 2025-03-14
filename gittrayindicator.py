@@ -116,7 +116,9 @@ class GitTrayMonitor:
             command = "git status; exec bash --noprofile --norc"  # Keeps the terminal open but avoids reloading startup scripts
             
             # Open the terminal in the specified directory and run the command
-            subprocess.Popen(["gnome-terminal", "--working-directory", working_directory, "--", "bash", "-c", command])
+            p = subprocess.Popen(["gnome-terminal", "--working-directory", working_directory, "--", "bash", "-c", command])
+            p.wait()
+            self.update_status(None)
             
         else:
             raise ValueError(f'{how2open} is not a valid option for how2open.')
