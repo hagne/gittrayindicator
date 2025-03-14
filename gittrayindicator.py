@@ -113,9 +113,6 @@ class GitTrayMonitor:
             # Define the path where the terminal should open
             working_directory = os.path.expanduser(repo)
             
-            # Command to run inside the terminal
-            command = "git status; exec bash -i"# --noprofile --norc"  # Keeps the terminal open but avoids reloading startup scripts
-            
             # Open the terminal in the specified directory and run the command
             # p = subprocess.Popen(["gnome-terminal", "--working-directory", working_directory, "--", "bash", "-c", command])
             p = subprocess.Popen(["x-terminal-emulator", "-e", f"bash -c 'cd {working_directory}; git status; exec bash --noprofile --norc -i'"])
