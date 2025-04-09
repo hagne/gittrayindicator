@@ -7,6 +7,7 @@ import gi
 import pathlib as pl
 import datetime
 import webbrowser
+import shutil
 
 
 gi.require_version('AppIndicator3', '0.1')
@@ -19,6 +20,16 @@ from gi.repository import AppIndicator3, Gtk, GLib
 # ICON_STALE = "/usr/share/icons/gnome/16x16/status/dialog-warning.png"
 # Load repositories from config file
 CONFIG_FILE = os.path.expanduser("~/.git_tray_config.json")
+
+
+def determine_terminal():
+    terminal = 'xtermemul'
+    if shutil.which("x-terminal-emulator") is None:
+        terminal = 'gnometerm'
+    
+    return terminal
+
+terminal = determine_terminal()
 
 def find_icon(icon_list):
     for p2f in icon_list:
@@ -115,7 +126,10 @@ class GitTrayMonitor:
             
             # Open the terminal in the specified directory and run the command
             # p = subprocess.Popen(["gnome-terminal", "--working-directory", working_directory, "--", "bash", "-c", command])
-            p = subprocess.Popen(["x-terminal-emulator", "-e", f"bash -c 'cd {working_directory}; git status; exec bash --noprofile --norc -i'"])
+            if terminal == 'xtermemul':
+                p = subprocess.Popen(["x-terminal-emulator", "-e", f"bash -c 'cd {working_directory}; git status; exec bash --noprofile --norc -i'"])
+            else:
+                p = subprocess.Popen(["gnome-terminal", "--working-directory", working_directory])
             p.wait()
             
             self.update_status(which = repo)
