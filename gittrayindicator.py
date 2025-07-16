@@ -114,7 +114,7 @@ class GitTrayMonitor:
         # Start monitoring
         self.update_status()
 
-    def quick_git_commit(self,_, commit_message="quick commit"):
+    def quick_git_commit(self,_, dialog, commit_message="quick commit"):
         for repo, status in self.repos_stati.items():
             if status == 'Dirty':
                 try:
@@ -130,6 +130,7 @@ class GitTrayMonitor:
                     print('tp_130')
                     self.update_status(which = repo)
                     print(f'quick commit and pushed {repo}')
+                    dialog.destroy()
                 except Exception as e:
                     dialog = Gtk.Dialog(title=f"repo {repo} return error:\n{e}", 
                                         modal=True,
@@ -137,7 +138,7 @@ class GitTrayMonitor:
                     dialog.add_buttons(Gtk.STOCK_OK, Gtk.ResponseType.OK)
         return
     
-    def pull_all(self,_, commit_message="quick commit"):
+    def pull_all(self,_, dialog,commit_message="quick commit"):
         for repo, status in self.repos_stati.items():
             if status == 'Stale':
                 try:
@@ -149,6 +150,7 @@ class GitTrayMonitor:
                     subprocess.run(["git", "pull", "."], check=True)
                     self.update_status(which = repo)
                     print(f'pulled {repo}')
+                    dialog.destroy()
                 except Exception as e:
                     dialog = Gtk.Dialog(title=f"repo {repo} return error:\n{e}", 
                                         modal=True,
@@ -201,12 +203,12 @@ class GitTrayMonitor:
         if test == 'Dirty':
             print('s1')
             repo_item = Gtk.Button(label='quick commit and push')
-            repo_item.connect("clicked", self.quick_git_commit)
+            repo_item.connect("clicked", self.quick_git_commit, dialog)
             box.add(repo_item)
         if test == 'Stale':
             print('s2')
             repo_item = Gtk.Button(label='pull all')
-            repo_item.connect("clicked", self.pul, repo, dialog)
+            repo_item.connect("clicked", self.pull_all, dialog)
             box.add(repo_item)
         # repo_item.connect("clicked", self.open_repo, repo, dialog)
         dialog.show_all()      
