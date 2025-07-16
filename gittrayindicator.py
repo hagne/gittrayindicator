@@ -208,7 +208,7 @@ class GitTrayMonitor:
             repo_item = Gtk.Button(label='pull all')
             repo_item.connect("clicked", self.pul, repo, dialog)
             box.add(repo_item)
-        repo_item.connect("clicked", self.open_repo, repo, dialog)
+        # repo_item.connect("clicked", self.open_repo, repo, dialog)
         dialog.show_all()      
         dialog.run()
         dialog.destroy()
