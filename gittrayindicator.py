@@ -113,6 +113,48 @@ class GitTrayMonitor:
         
         # Start monitoring
         self.update_status()
+
+    def quick_git_commit(self,_, commit_message="quick commit"):
+        for repo, status in self.repos_stati.items():
+            if status == 'Dirty':
+                try:
+                    # Step 1: Change to the target directory
+                    repo_path = os.path.expanduser(repo)
+                    os.chdir(repo_path)
+            
+                    # Step 2–4: Run git commands
+                    subprocess.run(["git", "add", "."], check=True)
+                    subprocess.run(["git", "commit", "-m", commit_message], check=True)
+                    subprocess.run(["git", "push"], check=True)
+                    self.update_status(which = repo)
+                    print(f'quick commit and pushed {repo}')
+                except Exception as e:
+                    dialog = Gtk.Dialog(title=f"repo {repo} return error:\n{e}", 
+                                        modal=True,
+                                        )
+                    dialog.add_buttons(Gtk.STOCK_OK, Gtk.ResponseType.OK)
+        return
+    
+    def pull_all(self,_, commit_message="quick commit"):
+        for repo, status in self.repos_stati.items():
+            if status == 'Stale':
+                try:
+                    # Step 1: Change to the target directory
+                    repo_path = os.path.expanduser(repo)
+                    os.chdir(repo_path)
+            
+                    # Step 2–4: Run git commands
+                    subprocess.run(["git", "pull", "."], check=True)
+                    self.update_status(which = repo)
+                    print(f'pulled {repo}')
+                except Exception as e:
+                    dialog = Gtk.Dialog(title=f"repo {repo} return error:\n{e}", 
+                                        modal=True,
+                                        )
+                    dialog.add_buttons(Gtk.STOCK_OK, Gtk.ResponseType.OK)
+        return
+        
+        
     def open_repo(self,_,repo, dialog, how2open = 'terminal'):
         
         if how2open == 'jupyter':
@@ -154,7 +196,17 @@ class GitTrayMonitor:
                 repo_item = Gtk.Button(label=repo)
                 repo_item.connect("clicked", self.open_repo, repo, dialog)
                 box.add(repo_item)
-       
+        if test == 'Dirty':
+            print('s1')
+            repo_item = Gtk.Button(label='quick commit and push')
+            repo_item.connect("clicked", self.quick_git_commit)
+            box.add(repo_item)
+        if test == 'Stale':
+            print('s2')
+            repo_item = Gtk.Button(label='pull all')
+            repo_item.connect("clicked", self.pul, repo, dialog)
+            box.add(repo_item)
+        repo_item.connect("clicked", self.open_repo, repo, dialog)
         dialog.show_all()      
         dialog.run()
         dialog.destroy()
