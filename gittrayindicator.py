@@ -127,6 +127,7 @@ class GitTrayMonitor:
                     subprocess.run(["git", "commit", "-m", commit_message], check=True)
                     subprocess.run(["git", "push"], check=True)
                     env=dict(os.environ, GIT_ASKPASS='true', SSH_ASKPASS='true')
+                    print('tp_130')
                     self.update_status(which = repo)
                     print(f'quick commit and pushed {repo}')
                 except Exception as e:
