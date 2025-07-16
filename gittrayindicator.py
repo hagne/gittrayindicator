@@ -195,22 +195,22 @@ class GitTrayMonitor:
         box = dialog.get_content_area()
 
         # for status,repo in zip(self.repos_stati,self.repos):
+            
+        if test == 'Dirty':
+            repo_item = Gtk.Button(label='quick commit and push', )
+            repo_item.connect("clicked", self.quick_git_commit, dialog)
+            box.add(repo_item)
+        if test == 'Stale':
+            repo_item = Gtk.Button(label='pull all')
+            repo_item.connect("clicked", self.pull_all, dialog)
+            box.add(repo_item)
+            
         for repo, status in self.repos_stati.items():
             if status == test:
                 repo_item = Gtk.Button(label=repo)
                 repo_item.connect("clicked", self.open_repo, repo, dialog)
                 box.add(repo_item)
-        if test == 'Dirty':
-            print('s1')
-            repo_item = Gtk.Button(label='quick commit and push')
-            repo_item.connect("clicked", self.quick_git_commit, dialog)
-            box.add(repo_item)
-        if test == 'Stale':
-            print('s2')
-            repo_item = Gtk.Button(label='pull all')
-            repo_item.connect("clicked", self.pull_all, dialog)
-            box.add(repo_item)
-        # repo_item.connect("clicked", self.open_repo, repo, dialog)
+
         dialog.show_all()      
         dialog.run()
         dialog.destroy()
