@@ -147,7 +147,7 @@ class GitTrayMonitor:
                     os.chdir(repo_path)
             
                     # Step 2–4: Run git commands
-                    subprocess.run(["git", "pull", "."], check=True)
+                    subprocess.run(["git", "pull"], check=True)
                     self.update_status(which = repo)
                     print(f'pulled {repo}')
                     dialog.destroy()
